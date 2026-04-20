@@ -175,10 +175,20 @@ export default function InventoryForm({ inventory, products = [], isEdit = false
         if (!data.product_id) { alert('Please select a product!'); return; }
 
         if (isBulkMode) {
-            // Bulk — send variants array
+            // Bulk — send variants array directly via router.post to avoid setData async race
             if (activeRows.length === 0) { alert('Enter quantity for at least one variant!'); return; }
-            setData('variants', activeRows.map(r => ({ variant_id: r.variant_id, quantity: r.quantity })));
-            setTimeout(() => post('/admin/inventory/bulk-store'), 30);
+
+            const bulkPayload = {
+                product_id:  data.product_id,
+                type:        data.type,
+                cost_price:  data.cost_price,
+                reference:   data.reference,
+                source:      data.source,
+                note:        data.note,
+                variants:    activeRows.map(r => ({ variant_id: r.variant_id, quantity: r.quantity })),
+            };
+
+            router.post('/admin/inventory/bulk-store', bulkPayload);
         } else {
             // Single
             if (!data.quantity || Number(data.quantity) <= 0) { alert('Quantity must be > 0!'); return; }
