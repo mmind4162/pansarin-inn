@@ -426,7 +426,7 @@ export default function InventoryForm({ inventory, products = [], isEdit = false
                                                     }`}>{row.current_stock}</span>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <input type="number" min="0" step="0.01" placeholder="0"
+                                                    <input type="number" min="0" step="1" placeholder="0"
                                                         value={row.quantity}
                                                         onChange={e => updateRowQty(i, e.target.value)}
                                                         className="w-full border rounded-lg px-3 py-1.5 text-center text-sm focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" />
