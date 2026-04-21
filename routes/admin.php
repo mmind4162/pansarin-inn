@@ -93,6 +93,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     | Orders
     |--------------------------------------------------------------------------
     */
+    Route::get('orders/track', [OrderController::class, 'track'])->name('orders.track');
     Route::resource('orders', OrderController::class);
     Route::get('orders-data', [OrderController::class, 'getData'])->name('orders.data');
     Route::post('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
