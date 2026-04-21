@@ -56,6 +56,33 @@ class WishlistController extends Controller
         ]);
     }
 
+    /**
+     * AJAX: return variants for a given product_id
+     */
+    public function getVariantsByProduct(Request $request)
+    {
+        $productId = $request->get('product_id');
+
+        if (!$productId) {
+            return response()->json([]);
+        }
+
+        $variants = \App\Models\ProductVariant::where('product_id', $productId)
+            ->where('status', true)
+            ->get(['id', 'sku', 'value', 'attributes'])
+            ->map(function ($v) {
+                $label = '';
+                if (!empty($v->attributes) && is_array($v->attributes)) {
+                    $label = implode(' / ', array_values($v->attributes));
+                }
+                if (!$label) $label = $v->value ?: $v->sku;
+
+                return ['id' => $v->id, 'label' => $label, 'sku' => $v->sku];
+            });
+
+        return response()->json($variants);
+    }
+
     public function store(WishlistRequest $request)
     {
         try {

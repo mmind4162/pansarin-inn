@@ -234,6 +234,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     | Wishlists
     |--------------------------------------------------------------------------
     */
+    Route::get('wishlist/variants-by-product', [WishlistController::class, 'getVariantsByProduct'])->name('wishlist.variants-by-product');
     Route::post('wishlist/bulk-delete', [WishlistController::class, 'bulkDelete'])->name('wishlist.bulk-delete');
     Route::get('wishlist-data', [WishlistController::class, 'getData'])->name('wishlist.data');
     Route::resource('wishlist', WishlistController::class)->except(['edit', 'update']);

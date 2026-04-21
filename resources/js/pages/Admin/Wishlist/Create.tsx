@@ -12,6 +12,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface Product { id: number; name: string; image?: string | null; }
 interface User    { id: number; name: string; email: string; }
+interface Variant { id: number; label: string; sku: string; }
 
 interface Props {
     products: Product[];
@@ -25,6 +26,7 @@ function FieldError({ message }: { message?: string }) {
 }
 
 const card = 'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5';
+const inputCls = 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100';
 
 export default function Create({ products, users, flash }: Props) {
     const { data, setData, post, processing, errors } = useForm({
@@ -37,11 +39,28 @@ export default function Create({ products, users, flash }: Props) {
     const [showUserPicker,    setShowUserPicker]    = useState(false);
     const [productSearch,     setProductSearch]     = useState('');
     const [userSearch,        setUserSearch]        = useState('');
+    const [variants,          setVariants]          = useState<Variant[]>([]);
+    const [loadingVariants,   setLoadingVariants]   = useState(false);
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error)   toast.error(flash.error);
     }, [flash]);
+
+    // Load variants when product changes
+    useEffect(() => {
+        if (!data.product_id) {
+            setVariants([]);
+            setData('product_variant_id', '');
+            return;
+        }
+        setLoadingVariants(true);
+        setData('product_variant_id', '');
+        fetch(`/admin/wishlist/variants-by-product?product_id=${data.product_id}`)
+            .then(r => r.json())
+            .then((v: Variant[]) => { setVariants(v); setLoadingVariants(false); })
+            .catch(() => setLoadingVariants(false));
+    }, [data.product_id]);
 
     const selectedProduct = products.find(p => p.id === parseInt(data.product_id));
     const selectedUser    = users.find(u => u.id === parseInt(data.user_id));
@@ -76,7 +95,9 @@ export default function Create({ products, users, flash }: Props) {
 
                     {/* User */}
                     <div className={card}>
-                        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">User <span className="text-red-500">*</span></h3>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            User <span className="text-red-500">*</span>
+                        </h3>
                         {selectedUser ? (
                             <div className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
@@ -100,7 +121,9 @@ export default function Create({ products, users, flash }: Props) {
 
                     {/* Product */}
                     <div className={card}>
-                        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Product <span className="text-red-500">*</span></h3>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            Product <span className="text-red-500">*</span>
+                        </h3>
                         {selectedProduct ? (
                             <div className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
                                 {selectedProduct.image
@@ -120,20 +143,36 @@ export default function Create({ products, users, flash }: Props) {
                         <FieldError message={errors.product_id} />
                     </div>
 
-                    {/* Variant (optional) */}
-                    <div className={card}>
-                        <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                            Product Variant <span className="text-sm font-normal text-gray-400">(optional)</span>
-                        </h3>
-                        <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-                            Enter the variant ID to associate a specific variant. Leave blank to wishlist the base product.
-                        </p>
-                        <input type="number" min="1" value={data.product_variant_id}
-                            onChange={e => setData('product_variant_id', e.target.value)}
-                            placeholder="Variant ID (optional)"
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
-                        <FieldError message={errors.product_variant_id} />
-                    </div>
+                    {/* Variant dropdown — shown only after product is selected */}
+                    {data.product_id && (
+                        <div className={card}>
+                            <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                Product Variant{' '}
+                                <span className="text-sm font-normal text-gray-400">(optional)</span>
+                            </h3>
+                            {loadingVariants ? (
+                                <p className="text-sm text-gray-400">Loading variants...</p>
+                            ) : variants.length === 0 ? (
+                                <p className="text-sm text-gray-400 dark:text-gray-500">
+                                    This product has no variants. The base product will be wishlisted.
+                                </p>
+                            ) : (
+                                <select
+                                    value={data.product_variant_id}
+                                    onChange={e => setData('product_variant_id', e.target.value)}
+                                    className={inputCls}
+                                >
+                                    <option value="">— No specific variant (base product) —</option>
+                                    {variants.map(v => (
+                                        <option key={v.id} value={v.id}>
+                                            {v.label} ({v.sku})
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                            <FieldError message={errors.product_variant_id} />
+                        </div>
+                    )}
 
                     <div className="flex justify-end">
                         <button type="submit" disabled={processing}
